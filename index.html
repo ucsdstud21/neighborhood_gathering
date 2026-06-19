@@ -179,7 +179,7 @@
 
   <header>
     <h1>🏡 Neighborhood Gathering</h1>
-    <p>Saturday, July 12, 2026 &nbsp;|&nbsp; 4:00 PM – 8:00 PM</p>
+    <p>Saturday, June 27, 2026 &nbsp;|&nbsp; 11:00 AM – 1:00 PM</p>
   </header>
 
   <!-- Summary Stats -->
@@ -240,7 +240,7 @@
 <script>
   // ─── CONFIG ───────────────────────────────────────────
   const SHEET_ID = '1TKqP-ZOmDFhvu7TCNRYYGk8mNzOc9IjalQKYV5pAzT8';
-  // Expected column order (0-indexed): Timestamp | Name | Guests | Food Contribution | Notes
+  // Expected column order: Timestamp | Name | Guests | Food Contribution | Notes
   // ──────────────────────────────────────────────────────
 
   function showStatus(msg, isError = false) {
@@ -248,6 +248,21 @@
     el.textContent = msg;
     el.className = 'status-msg' + (isError ? ' error' : '');
     el.style.display = 'block';
+  }
+
+  // ─── TIMESTAMP FORMATTER ──────────────────────────────
+  function formatTimestamp(value) {
+    // Handle Google's "Date(yyyy,m,d,h,min,s)" format
+    const match = String(value).match(/Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)/);
+    if (match) {
+      const [_, yr, mo, day, hr = 0, min = 0] = match.map(Number);
+      const date = new Date(yr, mo, day, hr, min);
+      return date.toLocaleString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric',
+        hour: 'numeric', minute: '2-digit', hour12: true
+      });
+    }
+    return value; // Fallback: return as-is if format is unrecognized
   }
 
   function updateStats() {
@@ -283,7 +298,7 @@
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${i + 1}</td>
-        <td>${row[0] || ''}</td>
+        <td>${formatTimestamp(row[0]) || ''}</td>
         <td>${row[1] || ''}</td>
         <td>${row[2] || ''}</td>
         <td>${row[3] || ''}</td>
