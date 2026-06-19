@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Neighborhood Gathering Signups</title>
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      color: #333;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    header {
+      background: linear-gradient(135deg, #2c7a4b, #4caf7d);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    header h1 { font-size: 1.8rem; margin-bottom: 6px; }
+    header p  { font-size: 1rem; opacity: 0.9; }
+
+    .summary {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      padding: 20px 30px;
+      background: #f9fbfc;
+      border-bottom: 1px solid #e2e8f0;
+      flex-wrap: wrap;
+    }
+
+    .stat { text-align: center; }
+
+    .stat .value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #2c7a4b;
+    }
+
+    .stat .label {
+      font-size: 0.8rem;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 16px 30px;
+      border-bottom: 1px solid #e2e8f0;
+      align-items: center;
+    }
+
+    .controls input[type="text"] {
+      flex: 1;
+      min-width: 200px;
+      padding: 10px 14px;
+      border: 1px solid #cbd5e0;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border 0.2s;
+    }
+
+    .controls input[type="text"]:focus { border-color: #2c7a4b; }
+
+    .btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-green {
+      background: #2c7a4b;
+      color: white;
+    }
+
+    .btn-green:hover { background: #235f3a; }
+
+    .file-label {
+      display: inline-block;
+      padding: 10px 16px;
+      background: #e2e8f0;
+      color: #444;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .file-label:hover { background: #cbd5e0; }
+
+    input[type="file"] { display: none; }
+
+    .status-msg {
+      padding: 10px 30px;
+      font-size: 0.85rem;
+      color: #555;
+      background: #f0fdf4;
+      border-bottom: 1px solid #e2e8f0;
+      display: none;
+    }
+
+    .status-msg.error { background: #fff5f5; color: #c0392b; }
+
+    .table-wrapper {
+      overflow-x: auto;
+      padding: 20px 30px 30px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+
+    thead tr {
+      background: #2c7a4b;
+      color: white;
+    }
+
+    thead th {
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    tbody tr:nth-child(even) { background: #f4faf7; }
+    tbody tr:hover { background: #e6f4ed; transition: background 0.2s; }
+
+    tbody td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: middle;
+    }
+
+    .empty-msg {
+      text-align: center;
+      padding: 40px;
+      color: #999;
+      font-size: 0.95rem;
+    }
+
+    footer {
+      text-align: center;
+      padding: 16px;
+      font-size: 0.8rem;
+      color: #999;
+      background: #f9fbfc;
+      border-top: 1px solid #e2e8f0;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>🏡 Neighborhood Gathering</h1>
+    <p>Saturday, July 12, 2026 &nbsp;|&nbsp; 4:00 PM – 8:00 PM</p>
+  </header>
+
+  <!-- Summary Stats -->
+  <div class="summary">
+    <div class="stat">
+      <div class="value" id="totalFamilies">—</div>
+      <div class="label">Households</div>
+    </div>
+    <div class="stat">
+      <div class="value" id="totalPeople">—</div>
+      <div class="label">Total Attendees</div>
+    </div>
+    <div class="stat">
+      <div class="value" id="totalDishes">—</div>
+      <div class="label">Dishes Covered</div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <input type="text" id="searchInput" placeholder="🔍  Search by name, food, or notes..." oninput="filterTable()" />
+    <button class="btn btn-green" onclick="loadFromSheets()">↻ Refresh from Google Sheets</button>
+    <label class="file-label">
+      📂 Upload Excel File
+      <input type="file" id="excelFile" accept=".xlsx,.xls" onchange="loadExcel(event)" />
+    </label>
+  </div>
+
+  <!-- Status Message -->
+  <div class="status-msg" id="statusMsg"></div>
+
+  <!-- Table -->
+  <div class="table-wrapper">
+    <table id="signupTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Timestamp</th>
+          <th>Name</th>
+          <th>Guests</th>
+          <th>Food Contribution</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <tr>
+          <td colspan="6" class="empty-msg">
+            Click <strong>↻ Refresh from Google Sheets</strong> or upload an Excel file to load data.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <footer id="footerNote">Last updated: —</footer>
+</div>
+
+<script>
+  // ─── CONFIG ───────────────────────────────────────────
+  const SHEET_ID = '1TKqP-ZOmDFhvu7TCNRYYGk8mNzOc9IjalQKYV5pAzT8';
+  // Expected column order (0-indexed): Timestamp | Name | Guests | Food Contribution | Notes
+  // ──────────────────────────────────────────────────────
+
+  function showStatus(msg, isError = false) {
+    const el = document.getElementById('statusMsg');
+    el.textContent = msg;
+    el.className = 'status-msg' + (isError ? ' error' : '');
+    el.style.display = 'block';
+  }
+
+  function updateStats() {
+    const rows = document.querySelectorAll('#tableBody tr:not(.empty-row)');
+    let people = 0;
+    rows.forEach(row => {
+      const cells = row.querySelectorAll('td');
+      // Guests is column index 3 (# | Timestamp | Name | Guests | ...)
+      if (cells.length >= 4) people += parseInt(cells[3].textContent) || 0;
+    });
+    document.getElementById('totalFamilies').textContent = rows.length;
+    document.getElementById('totalPeople').textContent   = people;
+    document.getElementById('totalDishes').textContent   = rows.length;
+  }
+
+  function filterTable() {
+    const query = document.getElementById('searchInput').value.toLowerCase();
+    document.querySelectorAll('#tableBody tr').forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none';
+    });
+  }
+
+  function buildRows(dataRows) {
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = '';
+
+    if (!dataRows || dataRows.length === 0) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="6" class="empty-msg">No data found.</td></tr>';
+      return;
+    }
+
+    dataRows.forEach((row, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${i + 1}</td>
+        <td>${row[0] || ''}</td>
+        <td>${row[1] || ''}</td>
+        <td>${row[2] || ''}</td>
+        <td>${row[3] || ''}</td>
+        <td>${row[4] || ''}</td>`;
+      tbody.appendChild(tr);
+    });
+
+    updateStats();
+    const now = new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+    document.getElementById('footerNote').textContent = `Last updated: ${now}`;
+  }
+
+  // ─── GOOGLE SHEETS IMPORT ─────────────────────────────
+  function loadFromSheets() {
+    showStatus('⏳ Fetching data from Google Sheets...');
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+
+    fetch(url)
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
+        return res.text();
+      })
+      .then(text => {
+        // Robust regex strip of Google's variable-length wrapper
+        const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);/);
+        if (!match) throw new Error('Unexpected response format from Google Sheets.');
+
+        const json = JSON.parse(match[1]);
+        const rows = json.table.rows;
+
+        if (!rows || rows.length === 0) {
+          showStatus('⚠️ Sheet loaded but no data rows were found.', true);
+          return;
+        }
+
+        const data = rows.map(row =>
+          row.c.map(cell => (cell && cell.v !== null && cell.v !== undefined) ? String(cell.v) : '')
+        );
+
+        buildRows(data);
+        showStatus(`✅ Loaded ${data.length} row(s) from Google Sheets!`);
+      })
+      .catch(err => {
+        showStatus('❌ Could not load from Google Sheets. Make sure the sheet is set to "Anyone with the link can view." Error: ' + err.message, true);
+      });
+  }
+
+  // ─── EXCEL UPLOAD IMPORT ──────────────────────────────
+  function loadExcel(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    showStatus(`⏳ Reading "${file.name}"...`);
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+      try {
+        const workbook = XLSX.read(e.target.result, { type: 'binary' });
+        const sheet    = workbook.Sheets[workbook.SheetNames[0]];
+        const allRows  = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+        const dataRows = allRows.slice(1).filter(r => r.some(cell => cell !== '' && cell !== undefined));
+
+        buildRows(dataRows);
+        showStatus(`✅ "${file.name}" loaded successfully! Showing ${dataRows.length} rows.`);
+      } catch (err) {
+        showStatus('❌ Failed to read Excel file. Make sure it is a valid .xlsx or .xls file.', true);
+      }
+    };
+
+    reader.readAsBinaryString(file);
+  }
+
+  // Auto-load on page open
+  loadFromSheets();
+</script>
+</body>
+</html>
