@@ -178,7 +178,8 @@
 <div class="container">
 
   <header>
-    <h1>🏡 Neighborhood Gathering</h1>
+    <h1>🏡 Splash & Socialize - Informal Neighborhood Gathering in the Park</h1>
+<p>Email ucsdstud21@gmail.com with any questions</p>
     <p>Saturday, June 27, 2026 &nbsp;|&nbsp; 11:00 AM – 1:00 PM</p>
   </header>
 
@@ -217,7 +218,6 @@
       <thead>
         <tr>
           <th>#</th>
-          <th>Timestamp</th>
           <th>Name</th>
           <th>Guests</th>
           <th>Food Contribution</th>
@@ -226,7 +226,7 @@
       </thead>
       <tbody id="tableBody">
         <tr>
-          <td colspan="6" class="empty-msg">
+          <td colspan="5" class="empty-msg">
             Click <strong>↻ Refresh from Google Sheets</strong> or upload an Excel file to load data.
           </td>
         </tr>
@@ -240,7 +240,7 @@
 <script>
   // ─── CONFIG ───────────────────────────────────────────
   const SHEET_ID = '1TKqP-ZOmDFhvu7TCNRYYGk8mNzOc9IjalQKYV5pAzT8';
-  // Expected column order: Timestamp | Name | Guests | Food Contribution | Notes
+  // Sheet columns: Timestamp (skipped) | Name | Guests | Food Contribution | Notes
   // ──────────────────────────────────────────────────────
 
   function showStatus(msg, isError = false) {
@@ -250,28 +250,13 @@
     el.style.display = 'block';
   }
 
-  // ─── TIMESTAMP FORMATTER ──────────────────────────────
-  function formatTimestamp(value) {
-    // Handle Google's "Date(yyyy,m,d,h,min,s)" format
-    const match = String(value).match(/Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)/);
-    if (match) {
-      const [_, yr, mo, day, hr = 0, min = 0] = match.map(Number);
-      const date = new Date(yr, mo, day, hr, min);
-      return date.toLocaleString('en-US', {
-        month: 'short', day: 'numeric', year: 'numeric',
-        hour: 'numeric', minute: '2-digit', hour12: true
-      });
-    }
-    return value; // Fallback: return as-is if format is unrecognized
-  }
-
   function updateStats() {
     const rows = document.querySelectorAll('#tableBody tr:not(.empty-row)');
     let people = 0;
     rows.forEach(row => {
       const cells = row.querySelectorAll('td');
-      // Guests is column index 3 (# | Timestamp | Name | Guests | ...)
-      if (cells.length >= 4) people += parseInt(cells[3].textContent) || 0;
+      // Guests is now column index 2 (# | Name | Guests | ...)
+      if (cells.length >= 3) people += parseInt(cells[2].textContent) || 0;
     });
     document.getElementById('totalFamilies').textContent = rows.length;
     document.getElementById('totalPeople').textContent   = people;
@@ -290,7 +275,7 @@
     tbody.innerHTML = '';
 
     if (!dataRows || dataRows.length === 0) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="6" class="empty-msg">No data found.</td></tr>';
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="5" class="empty-msg">No data found.</td></tr>';
       return;
     }
 
@@ -298,7 +283,6 @@
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${i + 1}</td>
-        <td>${formatTimestamp(row[0]) || ''}</td>
         <td>${row[1] || ''}</td>
         <td>${row[2] || ''}</td>
         <td>${row[3] || ''}</td>
@@ -322,7 +306,6 @@
         return res.text();
       })
       .then(text => {
-        // Robust regex strip of Google's variable-length wrapper
         const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);/);
         if (!match) throw new Error('Unexpected response format from Google Sheets.');
 
